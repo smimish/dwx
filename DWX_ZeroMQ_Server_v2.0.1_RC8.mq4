@@ -1151,7 +1151,7 @@ void DWX_GetAccountInfo(string &zmq_ret) {
    // Iterate through all open orders to calculate net volume per key
    for (int i = 0; i < OrdersTotal(); i++) {
       if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) {
-         string comment = StringTrim(OrderComment());
+         string comment = OrderComment();
          string symbol = OrderSymbol();
          string key;
 
