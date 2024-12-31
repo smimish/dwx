@@ -1143,34 +1143,44 @@ void DWX_GetAccountInfo(string &zmq_ret) {
 
    bool found = true;
 
-   // Declare arrays to store unique symbols and their corresponding net volumes
-   string symbols[100];
+   // Declare arrays to store unique keys (comment-symbol) and their corresponding net volumes
+   string keys[100];
    double netVolumes[100];
-   int symbolCount = 0;
+   int keyCount = 0;
 
-   // Iterate through all open orders to calculate net volume per symbol
+   // Iterate through all open orders to calculate net volume per key
    for (int i = 0; i < OrdersTotal(); i++) {
       if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) {
+         string comment = StringTrim(OrderComment());
          string symbol = OrderSymbol();
+         string key;
+
+         // Construct the key based on the comment field
+         if (StringLen(comment) > 0) {
+            key = comment + " - " + symbol;
+         } else {
+            key = symbol;
+         }
+
          int index = -1;
 
-         // Check if the symbol is already in the list
-         for (int j = 0; j < symbolCount; j++) {
-            if (symbols[j] == symbol) {
+         // Check if the key is already in the list
+         for (int j = 0; j < keyCount; j++) {
+            if (keys[j] == key) {
                index = j;
                break;
             }
          }
 
-         // If the symbol is not in the list, add it
+         // If the key is not in the list, add it
          if (index == -1) {
-            symbols[symbolCount] = symbol;
-            netVolumes[symbolCount] = 0.0;
-            index = symbolCount;
-            symbolCount++;
+            keys[keyCount] = key;
+            netVolumes[keyCount] = 0.0;
+            index = keyCount;
+            keyCount++;
          }
 
-         // Update the net volume for the symbol
+         // Update the net volume for the key
          if (OrderType() == OP_BUY) {
             netVolumes[index] += OrderLots();
          } else if (OrderType() == OP_SELL) {
@@ -1186,16 +1196,15 @@ void DWX_GetAccountInfo(string &zmq_ret) {
    zmq_ret = zmq_ret + ", '_free_margin': "  + DoubleToStr(AccountFreeMargin());
    zmq_ret = zmq_ret + ", '_num_orders': "  + IntegerToString(OrdersTotal());
 
-   // Combine net volumes by symbol into a single field
+   // Combine net volumes by key into a single field
    zmq_ret = zmq_ret + ", '_volume_orders': {";
-   for (int i = 0; i < symbolCount; i++) {
-      zmq_ret = zmq_ret + "'" + symbols[i] + "': " + DoubleToStr(netVolumes[i], 2);
-      if (i < symbolCount - 1) {
+   for (int i = 0; i < keyCount; i++) {
+      zmq_ret = zmq_ret + "'" + keys[i] + "': " + DoubleToStr(netVolumes[i], 2);
+      if (i < keyCount - 1) {
          zmq_ret = zmq_ret + ", ";
       }
    }
    zmq_ret = zmq_ret + "}";
-
 }
 
 //+------------------------------------------------------------------+
