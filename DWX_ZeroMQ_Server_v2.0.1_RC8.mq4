@@ -1189,7 +1189,7 @@ void DWX_GetAccountInfo(string &zmq_ret) {
    // Combine net volumes by symbol into a single field
    zmq_ret = zmq_ret + ", '_volume_orders': {";
    for (int i = 0; i < symbolCount; i++) {
-      string symbol = StringSubstr(symbols, StringFind(symbols, "|") * i, StringFind(symbols, "|", StringFind(symbols, "|") * (i + 1)));
+      string symbol = StringSubstr(symbols, StringFind(symbols, "|", StringFind(symbols, "|", 0) * i) + 1, StringFind(symbols, "|", StringFind(symbols, "|", StringFind(symbols, "|", 0) * i + 1)) - 1);
       zmq_ret = zmq_ret + "'" + symbol + "': " + DoubleToStr(netVolumes[i], 2);
       if (i < symbolCount - 1) {
          zmq_ret = zmq_ret + ", ";
