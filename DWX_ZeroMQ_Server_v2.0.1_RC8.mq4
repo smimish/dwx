@@ -1143,8 +1143,8 @@ void DWX_GetAccountInfo(string &zmq_ret) {
 
    bool found = true;
 
-   // Declare a map-like structure to store net volumes per symbol
-   string symbols = "";
+   // Declare arrays to store unique symbols and their corresponding net volumes
+   string symbols[100];
    double netVolumes[100];
    int symbolCount = 0;
 
@@ -1156,7 +1156,7 @@ void DWX_GetAccountInfo(string &zmq_ret) {
 
          // Check if the symbol is already in the list
          for (int j = 0; j < symbolCount; j++) {
-            if (StringFind(symbols, symbol) != -1) {
+            if (symbols[j] == symbol) {
                index = j;
                break;
             }
@@ -1164,9 +1164,9 @@ void DWX_GetAccountInfo(string &zmq_ret) {
 
          // If the symbol is not in the list, add it
          if (index == -1) {
-            symbols = StringConcatenate(symbols, symbol, "|");
+            symbols[symbolCount] = symbol;
+            netVolumes[symbolCount] = 0.0;
             index = symbolCount;
-            netVolumes[index] = 0.0;
             symbolCount++;
          }
 
@@ -1189,8 +1189,7 @@ void DWX_GetAccountInfo(string &zmq_ret) {
    // Combine net volumes by symbol into a single field
    zmq_ret = zmq_ret + ", '_volume_orders': {";
    for (int i = 0; i < symbolCount; i++) {
-      string symbol = StringSubstr(symbols, StringFind(symbols, "|", StringFind(symbols, "|", 0) * i) + 1, StringFind(symbols, "|", StringFind(symbols, "|", StringFind(symbols, "|", 0) * i + 1)) - 1);
-      zmq_ret = zmq_ret + "'" + symbol + "': " + DoubleToStr(netVolumes[i], 2);
+      zmq_ret = zmq_ret + "'" + symbols[i] + "': " + DoubleToStr(netVolumes[i], 2);
       if (i < symbolCount - 1) {
          zmq_ret = zmq_ret + ", ";
       }
