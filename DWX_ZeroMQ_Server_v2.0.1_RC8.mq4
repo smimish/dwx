@@ -1143,14 +1143,59 @@ void DWX_GetAccountInfo(string &zmq_ret) {
 
    bool found = true;
 
+   // Declare a map-like structure to store net volumes per symbol
+   string symbols = "";
+   double netVolumes[100];
+   int symbolCount = 0;
+
+   // Iterate through all open orders to calculate net volume per symbol
+   for (int i = 0; i < OrdersTotal(); i++) {
+      if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) {
+         string symbol = OrderSymbol();
+         int index = -1;
+
+         // Check if the symbol is already in the list
+         for (int j = 0; j < symbolCount; j++) {
+            if (StringFind(symbols, symbol) != -1) {
+               index = j;
+               break;
+            }
+         }
+
+         // If the symbol is not in the list, add it
+         if (index == -1) {
+            symbols = StringConcatenate(symbols, symbol, "|");
+            index = symbolCount;
+            netVolumes[index] = 0.0;
+            symbolCount++;
+         }
+
+         // Update the net volume for the symbol
+         if (OrderType() == OP_BUY) {
+            netVolumes[index] += OrderLots();
+         } else if (OrderType() == OP_SELL) {
+            netVolumes[index] -= OrderLots();
+         }
+      }
+   }
+
    zmq_ret = zmq_ret + "'_action': 'ACCOUNT_INFO'";
    zmq_ret = zmq_ret + ", '_balance': " + DoubleToStr(AccountBalance());
    zmq_ret = zmq_ret + ", '_equity': "  + DoubleToStr(AccountEquity());
    zmq_ret = zmq_ret + ", '_margin': "  + DoubleToStr(AccountMargin());
    zmq_ret = zmq_ret + ", '_free_margin': "  + DoubleToStr(AccountFreeMargin());
    zmq_ret = zmq_ret + ", '_num_orders': "  + IntegerToString(OrdersTotal());
-   
-   
+
+   // Combine net volumes by symbol into a single field
+   zmq_ret = zmq_ret + ", '_volume_orders': {";
+   for (int i = 0; i < symbolCount; i++) {
+      string symbol = StringSubstr(symbols, StringFind(symbols, "|") * i, StringFind(symbols, "|", StringFind(symbols, "|") * (i + 1)));
+      zmq_ret = zmq_ret + "'" + symbol + "': " + DoubleToStr(netVolumes[i], 2);
+      if (i < symbolCount - 1) {
+         zmq_ret = zmq_ret + ", ";
+      }
+   }
+   zmq_ret = zmq_ret + "}";
 
 }
 
